@@ -1,9 +1,153 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta http-equiv="refresh" content="0; url=https://t.me/KINGONTOP111?text=Hello%20bhai%2C%20mujhe%20Gmail%20book%20karna%20hai">
+<meta charset="UTF-8">
+<title>Gravity Dodge</title>
+<style>
+body {
+  margin: 0;
+  overflow: hidden;
+  background: black;
+  font-family: Arial;
+  color: white;
+}
+canvas {
+  display: block;
+}
+#score {
+  position: absolute;
+  top: 10px;
+  left: 20px;
+  font-size: 20px;
+}
+</style>
 </head>
 <body>
-Redirecting...
+
+<div id="score">Score: 0</div>
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let gravity = 0.5;
+let flip = 1;
+let score = 0;
+
+const player = {
+  x: 100,
+  y: canvas.height / 2,
+  size: 20,
+  velY: 0
+};
+
+let obstacles = [];
+let particles = [];
+
+function spawnObstacle() {
+  let gap = 150;
+  let topHeight = Math.random() * (canvas.height - gap);
+
+  obstacles.push({
+    x: canvas.width,
+    width: 40,
+    top: topHeight,
+    bottom: canvas.height - topHeight - gap,
+    speed: 4 + score * 0.02
+  });
+}
+
+setInterval(spawnObstacle, 1500);
+
+document.addEventListener("keydown", e => {
+  if (e.code === "Space") {
+    flip *= -1;
+    createParticles(player.x, player.y);
+  }
+});
+
+function createParticles(x, y) {
+  for (let i = 0; i < 20; i++) {
+    particles.push({
+      x,
+      y,
+      vx: (Math.random() - 0.5) * 5,
+      vy: (Math.random() - 0.5) * 5,
+      life: 30
+    });
+  }
+}
+
+function update() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Player physics
+  player.velY += gravity * flip;
+  player.y += player.velY;
+
+  // Boundaries
+  if (player.y < 0 || player.y > canvas.height) {
+    resetGame();
+  }
+
+  // Draw player
+  ctx.fillStyle = "cyan";
+  ctx.fillRect(player.x, player.y, player.size, player.size);
+
+  // Obstacles
+  obstacles.forEach((obs, i) => {
+    obs.x -= obs.speed;
+
+    ctx.fillStyle = "red";
+    ctx.fillRect(obs.x, 0, obs.width, obs.top);
+    ctx.fillRect(obs.x, canvas.height - obs.bottom, obs.width, obs.bottom);
+
+    // Collision
+    if (
+      player.x < obs.x + obs.width &&
+      player.x + player.size > obs.x &&
+      (player.y < obs.top ||
+        player.y + player.size > canvas.height - obs.bottom)
+    ) {
+      resetGame();
+    }
+
+    if (obs.x + obs.width < 0) {
+      obstacles.splice(i, 1);
+      score++;
+      document.getElementById("score").innerText = "Score: " + score;
+    }
+  });
+
+  // Particles
+  particles.forEach((p, i) => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life--;
+
+    ctx.fillStyle = "white";
+    ctx.fillRect(p.x, p.y, 2, 2);
+
+    if (p.life <= 0) particles.splice(i, 1);
+  });
+
+  requestAnimationFrame(update);
+}
+
+function resetGame() {
+  player.y = canvas.height / 2;
+  player.velY = 0;
+  obstacles = [];
+  score = 0;
+  document.getElementById("score").innerText = "Score: 0";
+}
+
+update();
+</script>
+
 </body>
 </html>
